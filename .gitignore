@@ -112,3 +112,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+data/Abdurakipov-STS37_2.pdf
+data/cfp_dataset_v1_valid1.csv
+data/cfp_dataset_v1_valid2.csv
+data/cfp_dataset_v1.csv
