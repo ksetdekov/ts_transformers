@@ -82,3 +82,47 @@ def read_valid(link, encoder):
     val_target, val_cov = get_all_pump_ext_val(df_list)
 
     return val_target, val_cov 
+
+
+def validate_model(model, validation_target, validation_cov):
+    results = pd.DataFrame(columns=['mape', 'smape', 'mae', 'r2_value'])
+    true_values = []
+    predict_values = []
+    for part in range(len(validation_target)):
+        backtest_model_all_pumps_iter = model.historical_forecasts(
+            series=validation_target[part],
+            past_covariates=validation_cov[part],
+            start=0.1,
+            retrain=False,
+            verbose=True)
+
+        backtest_v3 = validation_target[part]
+        val_v3pumptarget_inters = backtest_v3.slice_intersect(backtest_model_all_pumps_iter)
+
+        
+
+        y_true = val_v3pumptarget_inters.values()
+        y_pred = backtest_model_all_pumps_iter.values()
+
+        true_values.append(y_true)
+        predict_values.append(y_pred)
+
+
+        mape = mean_absolute_percentage_error(y_true=y_true, y_pred=y_pred)
+        smape_v = smape(y_true, y_pred)
+        mae = mean_absolute_error(y_true=y_true, y_pred=y_pred)
+        r2_value = r2_score(y_true=y_true, y_pred=y_pred)
+
+        this_key_df = pd.DataFrame({'mape': mape, 'smape': smape_v, 'mae': mae, 'r2_value': r2_value}, index=[part])
+        results = results.append(this_key_df)
+
+        val_v3pumptarget_inters[-100:].plot(label='pred')
+        backtest_model_all_pumps_iter[-100:].plot(label='actual')
+        plt.show()
+        val_v3pumptarget_inters[:1000].plot(label='pred_first1k')
+        backtest_model_all_pumps_iter[:1000].plot(label='actual_first1k')
+        plt.show()
+
+    true_values = np.concatenate(true_values)
+    predict_values = np.concatenate(predict_values)
+    return results, true_values, predict_values
