@@ -22,3 +22,63 @@ def score_model(dict_valid):
         results = results.append(this_key_df)
 
     return results
+
+
+
+def get_one_pump_ext_val(inp_df):
+  onehot_series_0 = TimeSeries.from_dataframe(inp_df, 'DT', fill_missing_dates=True, freq='5T')
+
+  scaler = Scaler()
+  ts = scaler.fit_transform(onehot_series_0)  # scale the whole time series not caring about train/val split...
+  filler = MissingValuesFiller()
+  ts = filler.transform(ts, method='linear')
+  target = ts['DSHORTT1138P2300058']
+  # Create training and validation sets:
+
+  covariates = ts[['T1138P6000096', 'T1138P6000315', 'DMIDT1138P4000064',
+        'DSHORTT1138P4000064', 'DLONGT1138P4000064', 'DMIDT1138P2600012',
+        'DSHORTT1138P2600012', 'DLONGT1138P2600012', 'DMIDT1205P2300000',
+        'DSHORTT1205P2300000', 'DLONGT1205P2300000', 'T1205P2300000',
+        'T1138P4000064', 'T1138P2600012', 'T1138P600050', 'T1013P500399']]
+
+  print(len(covariates), len(target))
+  return covariates, target
+
+def get_all_pump_ext_val(df_all_pumps):
+  val_cov_all, val_target_all = [], []
+  for pump_df in df_all_pumps:
+    iter_val, iter_val_target = get_one_pump_ext_val(pump_df)
+    val_cov_all.append(iter_val)
+    val_target_all.append(iter_val_target)
+  return val_cov_all, val_target_all
+
+
+def read_valid(link, encoder):
+
+    data = pd.read_csv(link, index_col=False)
+    data.drop(['Unnamed: 0',
+     'MIDUPT1138P2300058',
+     'SHORTUPT1138P2300058',
+     'LONGUPT1138P2300058',
+     'DMIDT1138P2300058',
+     'DLONGT1138P2300058',
+     'UNIXDT', 'UUID'
+     ], axis=1, inplace=True)
+    data = data.fillna(0)
+    
+    transformed = encoder.transform(data.WELL_ID)
+    ohe_df = pd.DataFrame(transformed)
+    ohe_df.columns = encoder.classes_
+    df_oh = pd.concat([data, ohe_df], axis=1).drop(['WELL_ID'], axis=1)
+
+    pump_ids = set(data.WELL_ID.unique())
+
+
+    df_list = list()
+
+    for pump in pump_ids:
+        df_list.append(df_oh[df_oh[pump] == 1])
+
+    val_target, val_cov = get_all_pump_ext_val(df_list)
+
+    return val_target, val_cov 
