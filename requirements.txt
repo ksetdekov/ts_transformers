@@ -11,3 +11,4 @@ tqdm~=4.61.0
 sklearn
 lightautoml~=0.3.1
 pytorch-forecasting
+catch22
