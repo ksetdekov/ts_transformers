@@ -118,3 +118,4 @@ data/cfp_dataset_v1_valid2.csv
 data/cfp_dataset_v1.csv
 data/clean_train.csv
 allpumps_nbeats.pth.tar
+text/.~lock.transformers.docx#
